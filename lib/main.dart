@@ -1,9 +1,12 @@
 import 'package:bhargav_stockal/Blocs/home/home_bloc.dart';
+import 'package:bhargav_stockal/models/task.dart';
+import 'package:bhargav_stockal/stockal_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'Blocs/layout_list/layout_list_bloc.dart';
+import 'Blocs/tasks/tasks_bloc.dart';
 
 void main() {
   runApp(MyApp());
@@ -45,6 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool expandStyleSelected=false;
 
   late LayoutListBloc _layoutListBloc;
+  late TasksBloc _tasksBloc;
 
   bool boxModal=false;
   bool gridNContainers=true;
@@ -72,6 +76,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int themeSelected=1;
   int styleApplied=1;
   int typographyApplied=1;
+
+  List<Task> tasksList=[];
+
+  TextEditingController taskEditingController=TextEditingController();
   @override
   void initState() {
     super.initState();
@@ -79,6 +87,16 @@ class _MyHomePageState extends State<MyHomePage> {
     _bloc=HomeBloc();
 
     _layoutListBloc=LayoutListBloc();
+    _tasksBloc=TasksBloc();
+  }
+
+  @override
+  void dispose() {
+    taskEditingController.dispose();
+    _bloc.close();
+    _layoutListBloc.close();
+    _tasksBloc.close();
+    super.dispose();
   }
   @override
   Widget build(BuildContext context) {
@@ -157,13 +175,99 @@ class _MyHomePageState extends State<MyHomePage> {
                               fontFamily: "TTFirs",
                               fontSize: 32,
                               fontWeight: FontWeight.w700,
-                            color: titleColor
+                              color: titleColor
                           ),
                         ),
                       ),
 
+                      BlocBuilder(
+                        bloc: _tasksBloc,
+                        buildWhen: (previous, current){
+                          if(current is AddTaskState || current is TasksInitial){
+                            return true;
+                          }
+                          return false;
+                        },
+                        builder: (BuildContext context, state) {
+                          if(state is AddTaskState){
+                            taskEditingController.clear();
+                            return  Container(
+                              color: selectedItemBackgroundColor,
+                              margin: EdgeInsets.only(top: 16),
+                              padding: EdgeInsets.only(top: 16,bottom: 16,left: 24),
+                              child: Row(
+                                children: [
+                                  SvgPicture.asset("assets/icons/label_icon.svg",
+                                    height: 24,
+                                    width: 24,
+                                    color: labelIconColor,
+                                  ),
+                                  SizedBox(width: 16,),
+                                  FocusScope(
+                                      child: Focus(
+                                          onFocusChange: (focus){
+                                            if(!focus){
+                                              if(taskEditingController.text.trim().length>0){
+                                                tasksList.add(Task(
+                                                  id: tasksList.length+1,
+                                                  name: taskEditingController.text.trim(),
+                                                ));
+                                                cancelAddItem();
+                                              }
+                                            }
+                                          },
+                                          child: StockAlTextField(
+                                            controller: taskEditingController,
+                                            textStyle: labelTextStyle,
+                                            maxLines: 1,
+                                          )
+                                      )
+                                  )
+
+                                ],
+                              ),
+                            );
+                          }
+                          return SizedBox(height: 8,);
+                        },
+                      ),
+
+                      BlocBuilder(
+                        bloc: _tasksBloc,
+                        buildWhen: (previous, current){
+                          if(current is RefreshListState || current is TasksInitial){
+                            return true;
+                          }
+                          return false;
+                        },
+                        builder: (BuildContext context, state) {
+                          if(tasksList.length==0){
+                            return Container(height: 8,);
+                          }
+                          return ListView.builder(
+                            itemCount: tasksList.length,
+                            shrinkWrap: true,
+                            reverse: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemBuilder:(BuildContext context, int index){
+                              Task task=tasksList[index];
+                              return  Container(
+                                margin: EdgeInsets.only(top: 16),
+                                padding: EdgeInsets.only(top: 16,bottom: 16,left: 24),
+                                child: GestureDetector(
+                                  child: getMainItemLayout(title:"${task.name}",isSelected:task.selected),
+                                  onTap: (){
+                                    tasksList[index].selected=!task.selected;
+                                    _tasksBloc.add(RefreshItemsEvent());
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+
                       Container(
-                        margin: EdgeInsets.only(top: 16),
                         padding: EdgeInsets.only(top: 16,bottom: 16,left: 24),
                         color: expandTypographySelected?selectedItemBackgroundColor:null,
                         child: GestureDetector(
@@ -241,21 +345,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Container(
                         padding: EdgeInsets.only(top: 16,bottom: 16,left: 24),
                         child: GestureDetector(
-                          child: Row(
-                            children: [
-                              SvgPicture.asset(getStartedSelected?"assets/icons/check_box.svg":"assets/icons/label_icon.svg",
-                                color: fABColor,
-                                height: 24,width: 24,
-                              ),
-                              SizedBox(width: 16,),
-                              Text("get started",
-                                style: labelTextStyle.copyWith(
-                                  decoration: getStartedSelected?TextDecoration.lineThrough:null,
-                                  color: getStartedSelected?selectedTextColor:labelTextStyle.color
-                                ),
-                              )
-                            ],
-                          ),
+                          child: getMainItemLayout(title:"get started",isSelected:getStartedSelected),
                           onTap: (){
                             getStartedSelected=!getStartedSelected;
                             _bloc.add(RefreshHomeStateEvent());
@@ -266,12 +356,32 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   ),
                 ),
-                floatingActionButton: FloatingActionButton(
-                  onPressed: addItem,
-                  backgroundColor: fABColor,
-                  tooltip: 'Add',
-                  child: Icon(Icons.add,size: 40, color: scaffoldBackgroundColor,),
-                ), // This trailing comma makes auto-formatting nicer for build methods.
+                floatingActionButton: BlocBuilder(
+                  bloc: _tasksBloc,
+                  buildWhen: (previous, current){
+                    if(current is AddTaskState || current is TasksInitial){
+                      return true;
+                    }
+                    return false;
+                  },
+                  builder: (BuildContext context, state) {
+                    if(state is AddTaskState){
+                      return  FloatingActionButton(
+                        onPressed: cancelAddItem,
+                        backgroundColor: fABColor,
+                        tooltip: 'Cancel',
+                        child: Icon(Icons.clear,size: 40, color: scaffoldBackgroundColor,),
+                      );
+                    }
+                    return FloatingActionButton(
+                      onPressed: addItem,
+                      backgroundColor: fABColor,
+                      tooltip: 'Add',
+                      child: Icon(Icons.add,size: 40, color: scaffoldBackgroundColor,),
+                    );
+                  },
+                ),
+
               );
             }
           ),
@@ -281,7 +391,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void addItem() {
-
+    _tasksBloc.add(AddTaskEvent());
+  }
+  void cancelAddItem() {
+    hideKeyboard(context);
+    _tasksBloc.add(CancelAddingItemEvent());
   }
 
   Widget getLayoutItems(){
@@ -378,11 +492,15 @@ class _MyHomePageState extends State<MyHomePage> {
         SvgPicture.asset(isSelected?"assets/icons/check_box.svg":"assets/icons/label_icon.svg",
           height: 24,
           width: 24,
-          color: labelIconColor,
+          color: isSelected?fABColor:labelIconColor,
         ),
         SizedBox(width: 16,),
         Text("$title",
-          style: labelTextStyle,
+          //style: labelTextStyle,
+          style: labelTextStyle.copyWith(
+              decoration: isSelected?TextDecoration.lineThrough:null,
+              color: isSelected?selectedTextColor:labelTextStyle.color
+          ),
         )
       ],
     );
@@ -599,5 +717,8 @@ class _MyHomePageState extends State<MyHomePage> {
         )
       ],
     );
+  }
+  void hideKeyboard(BuildContext context){
+    FocusScope.of(context).requestFocus(FocusNode());
   }
 }
