@@ -252,7 +252,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             itemBuilder:(BuildContext context, int index){
                               Task task=tasksList[index];
                               return  Container(
-                                margin: EdgeInsets.only(top: 16),
                                 padding: EdgeInsets.only(top: 16,bottom: 16,left: 24),
                                 child: GestureDetector(
                                   child: getMainItemLayout(title:"${task.name}",isSelected:task.selected),
