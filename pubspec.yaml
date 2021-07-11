@@ -1,0 +1,56 @@
+name: bhargav_stockal
+description: Interview task.
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.12.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^0.22.0
+  cupertino_icons: ^1.0.2
+  flutter_bloc: ^7.0.0
+  equatable: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/
+
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-Italic.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+    - family: Mulish
+      fonts:
+        - asset: assets/fonts/Mulish-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Mulish-Italic.ttf
+          weight: 400
+        - asset: assets/fonts/Mulish-Bold.ttf
+          weight: 700
+    - family: iAWriterQuattroV
+      fonts:
+        - asset: assets/fonts/iAWriterQuattroV.ttf
+          weight: 400
+    - family: TTFirs
+      fonts:
+        - asset: assets/fonts/TTFirsNeue-Bold.ttf
+          weight: 700
